@@ -294,6 +294,8 @@ class AsynPool(_pool.Pool):
 
         # denormalized set of all inqueues.
         self._all_inqueues = set()
+        self._inqueue_cycle = None
+        self._inqueues_list = []
         super(AsynPool, self).__init__(processes, *args, **kwargs)
 
         for proc in self._pool:
@@ -334,6 +336,13 @@ class AsynPool(_pool.Pool):
             synq._writer.setblocking(0)
         return inq, outq, synq
 
+    def _reset_cycle(self):
+        all = self._inqueues_list
+        start_from = next(self._inq_cycle)
+        index = all.index(start_from)
+        all[:] = all[index:] + all[:index]
+        self._inq_cycle = cycle(all)
+
     def on_process_alive(self, pid):
         """Handler called when the WORKER_UP message is received
         from a child process, which marks the process as ready
@@ -346,6 +355,8 @@ class AsynPool(_pool.Pool):
         self._fileno_to_inq[proc.inqW_fd] = proc
         self._fileno_to_synq[proc.synqW_fd] = proc
         self._all_inqueues.add(proc.inqW_fd)
+        self._inqueues_list.append(proc.inqW_fd)
+        self._reset_cycle()
 
     def on_job_process_down(self, job, pid_gone):
         """Handler called for each job when the process it was assigned to
@@ -721,6 +732,7 @@ class TaskPool(BasePool):
         pool = self._pool
         hub_add, hub_remove = hub.add, hub.remove
         all_inqueues = self._pool._all_inqueues
+        inqueues_list = self._pool._inqueues_list
         fileno_to_inq = self._pool._fileno_to_inq
         fileno_to_outq = self._pool._fileno_to_outq
         fileno_to_synq = self._pool._fileno_to_synq
@@ -755,6 +767,7 @@ class TaskPool(BasePool):
             fileno_to_inq.pop(proc.inqW_fd, None)
             fileno_to_synq.pop(proc.synqW_fd, None)
             all_inqueues.discard(proc.inqW_fd)
+            inqueues_list.remove(proc.inqW_fd)
             hub_remove(proc.sentinel)
             hub_remove(proc.outqR_fd)
         self._pool.on_process_down = on_process_down
@@ -771,6 +784,7 @@ class TaskPool(BasePool):
         pop_message = outbound.popleft
         put_message = outbound.append
         all_inqueues = pool._all_inqueues
+        inqueues_list = pool._inqueues_list
         active_writes = self._active_writes
         diff = all_inqueues.difference
         hub_add, hub_remove = hub.add, hub.remove
@@ -806,6 +820,7 @@ class TaskPool(BasePool):
             # the connection is closed, this is essential as fds may be reused.
             active_writes.discard(fd)
             all_inqueues.discard(fd)
+            inqueues_list.discard(fd)
         self._pool.on_inqueue_close = on_inqueue_close
 
         def schedule_writes(ready_fds, shuffle=random.shuffle):
