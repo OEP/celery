@@ -28,6 +28,7 @@ import struct
 import time
 
 from collections import defaultdict, deque, namedtuple
+from itertools import cycle
 from pickle import HIGHEST_PROTOCOL
 from time import sleep
 from weakref import WeakValueDictionary, ref
@@ -280,6 +281,7 @@ class AsynPool(_pool.Pool):
         self.outbound_buffer = deque()
 
         self._stats = []
+        self._cycle = None
 
         super(AsynPool, self).__init__(processes, *args, **kwargs)
 
@@ -490,7 +492,6 @@ class AsynPool(_pool.Pool):
         mark_worker_as_busy = busy_workers.add
         write_generator_done = active_writers.discard
         get_job = self._cache.__getitem__
-        stats = self._stats
 
         def _put_back(job):
             # puts back at the end of the queue
@@ -543,67 +544,65 @@ class AsynPool(_pool.Pool):
             # mean the process is currently reading from the socket.
             # The socket is buffered so writeable simply means that
             # the buffer can accept at least 1 byte of data.
+            cycle = self._cycle
             ready_fds = set(ready_fds)
             found, needed = 0, len(ready_fds)
             for i in xrange(len(all_inqueues)):
-                num, fd = heappop(stats)
-                try:
-                    if fd in ready_fds:
-                        found += 1
-                        if found > needed:
-                            break
-                        if fd in active_writes:
-                            continue
-                        if is_fair_strategy and fd in busy_workers:
-                            # worker is already busy with another task
-                            continue
-                        if fd not in all_inqueues:
-                            hub_remove(fd)
-                            continue
-                        #print('USING: %r %r' % (num, fd))
-                        found += 1
+                fd = next(cycle)
+                if fd in ready_fds:
+                    found += 1
+                    if found > needed:
+                        break
+                    if fd in active_writes:
+                        continue
+                    if is_fair_strategy and fd in busy_workers:
+                        # worker is already busy with another task
+                        continue
+                    if fd not in all_inqueues:
+                        hub_remove(fd)
+                        continue
+                    #print('USING: %r %r' % (num, fd))
+                    found += 1
 
-                        try:
-                            job = pop_message()
-                        except IndexError:
-                            # no more messages, remove all inactive fds from the hub.
-                            # this is important since the fds are always writeable
-                            # as long as there's 1 byte left in the buffer, and so
-                            # this may create a spinloop where the event loop
-                            # always wakes up.
-                            [hub_remove(inqfd)
-                             for inqfd in diff(active_writes)]
-                            break
-                        else:
-                            if not job._accepted:  # job not accepted by another worker
-                                try:
-                                    # keep track of what process the write operation
-                                    # was scheduled for.
-                                    proc = job._scheduled_for = fileno_to_inq[fd]
-                                except KeyError:
-                                    # write was scheduled for this fd but the process
-                                    # has since exited and the message must be sent to
-                                    # another process.
-                                    put_message(job)
-                                    continue
-                                cor = _write_job(proc, fd, job)
-                                job._writer = ref(cor)
-                                mark_write_gen_as_active(cor)
-                                mark_write_fd_as_active(fd)
-                                mark_worker_as_busy(fd)
+                    try:
+                        job = pop_message()
+                    except IndexError:
+                        # no more messages, remove all inactive fds from the hub.
+                        # this is important since the fds are always writeable
+                        # as long as there's 1 byte left in the buffer, and so
+                        # this may create a spinloop where the event loop
+                        # always wakes up.
+                        [hub_remove(inqfd)
+                            for inqfd in diff(active_writes)]
+                        break
+                    else:
+                        if not job._accepted:  # job not accepted by another worker
+                            try:
+                                # keep track of what process the write operation
+                                # was scheduled for.
+                                proc = job._scheduled_for = fileno_to_inq[fd]
+                            except KeyError:
+                                # write was scheduled for this fd but the process
+                                # has since exited and the message must be sent to
+                                # another process.
+                                put_message(job)
+                                continue
+                            cor = _write_job(proc, fd, job)
+                            job._writer = ref(cor)
+                            mark_write_gen_as_active(cor)
+                            mark_write_fd_as_active(fd)
+                            mark_worker_as_busy(fd)
 
-                                # Try to write immediately, in case there's an error.
-                                try:
-                                    next(cor)
-                                except StopIteration:
-                                    pass
-                                except OSError as exc:
-                                    if get_errno(exc) != errno.EBADF:
-                                        raise
-                                else:
-                                    add_writer(fd, cor)
-                finally:
-                    heappush(stats, (num + 1, fd))
+                            # Try to write immediately, in case there's an error.
+                            try:
+                                next(cor)
+                            except StopIteration:
+                                pass
+                            except OSError as exc:
+                                if get_errno(exc) != errno.EBADF:
+                                    raise
+                            else:
+                                add_writer(fd, cor)
         hub.consolidate_callback = schedule_writes
 
         def send_job(tup):
@@ -839,12 +838,21 @@ class AsynPool(_pool.Pool):
         self._fileno_to_inq[proc.inqW_fd] = proc
         self._fileno_to_synq[proc.synqW_fd] = proc
         self._all_inqueues.add(proc.inqW_fd)
-        heapq.heappush(self._stats, (0, proc.inqW_fd))
+        self._add_to_cycle(proc.inqW_fd)
 
-    def _remove_from_stats(self, wanted_fd):
-        for index, (num, fd) in enumerate(self._stats):
-            if fd == wanted_fd:
-                return self._stats.pop(index)
+    def _add_to_cycle(self, fd):
+        stats = self._stats[:] = [fd] + list(self._rebuild_cycle())
+        self._cycle = cycle(stats)
+
+    def _rebuild_cycle(self, *skip):
+        for i in range(len(self._stats)):
+            fd = next(self._cycle)
+            if not skip or fd not in skip:
+                yield fd
+
+    def _remove_from_cycle(self, wanted_fd):
+        stats = self._stats[:] = list(self._rebuild_cycle(wanted_fd))
+        self._cycle = cycle(stats)
 
     def on_job_process_down(self, job, pid_gone):
         """Handler called for each job when the process it was assigned to
@@ -988,7 +996,7 @@ class AsynPool(_pool.Pool):
         be replaced by new sockets."""
         assert proc.exitcode is not None
         self._waiting_to_start.discard(proc)
-        self._remove_from_stats(proc.inqW_fd)
+        self._remove_from_cycle(proc.inqW_fd)
         removed = 1
         try:
             self._queues.pop(queues)
