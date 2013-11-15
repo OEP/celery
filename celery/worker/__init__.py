@@ -9,7 +9,7 @@
     (mod:`celery.bootsteps`).
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import os
 import socket
@@ -25,14 +25,14 @@ from billiard.util import Finalize
 from kombu.syn import detect_environment
 
 from celery import bootsteps
-from celery.bootsteps import RUN, TERMINATE
 from celery import concurrency as _concurrency
 from celery import platforms
 from celery import signals
+from celery.bootsteps import RUN, TERMINATE
 from celery.exceptions import (
     ImproperlyConfigured, SystemTerminate, TaskRevokedError,
 )
-from celery.five import string_t, values
+from celery.five import string_t, values, unicode_compatible
 from celery.utils import nodename, nodesplit, worker_direct
 from celery.utils.imports import reload_from_cwd
 from celery.utils.log import mlevel, worker_logger as logger
@@ -66,6 +66,7 @@ def default_nodename(hostname):
     return nodename(name or 'celery', host or socket.gethostname())
 
 
+@unicode_compatible
 class WorkController(object):
     """Unmanaged worker instance."""
     app = None

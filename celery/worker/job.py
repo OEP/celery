@@ -27,7 +27,7 @@ from celery.exceptions import (
     SoftTimeLimitExceeded, TimeLimitExceeded,
     WorkerLostError, Terminated, Retry, Reject,
 )
-from celery.five import items, monotonic, string, string_t
+from celery.five import items, monotonic, string, string_t, unicode_compatible
 from celery.platforms import signals as _signals
 from celery.utils import fun_takes_kwargs
 from celery.utils.functional import noop
@@ -82,6 +82,7 @@ DEFAULT_FIELDS = {
 }
 
 
+@unicode_compatible
 class Request(object):
     """A request for task execution."""
     if not IS_PYPY:  # pragma: no cover
@@ -528,6 +529,7 @@ class Request(object):
         return '{0.name}[{0.id}]{1}{2}'.format(self,
                ' eta:[{0}]'.format(self.eta) if self.eta else '',
                ' expires:[{0}]'.format(self.expires) if self.expires else '')
+    __unicode__ = __str__   # need this for slots
     shortinfo = __str__
 
     def __repr__(self):

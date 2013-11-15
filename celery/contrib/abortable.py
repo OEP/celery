@@ -81,7 +81,7 @@ have it block until the task is finished.
    database backends.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from celery import Task
 from celery.result import AsyncResult
@@ -102,7 +102,7 @@ Task is aborted (typically by the producer) and should be
 aborted as soon as possible.
 
 """
-ABORTED = 'ABORTED'
+ABORTED = str('ABORTED')
 
 
 class AbortableAsyncResult(AsyncResult):

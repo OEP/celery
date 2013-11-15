@@ -6,7 +6,7 @@
     Actual App instance implementation.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import os
 import threading
@@ -222,7 +222,7 @@ class Celery(object):
         base = options.pop('base', None) or self.Task
         bind = options.pop('bind', False)
 
-        T = type(fun.__name__, (base, ), dict({
+        T = type(str(fun.__name__), (base, ), dict({
             'app': self,
             'accept_magic_kwargs': False,
             'run': fun if bind else staticmethod(fun),
@@ -473,7 +473,7 @@ class Celery(object):
         if not keep_reduce:
             attrs['__reduce__'] = __reduce__
 
-        return type(name or Class.__name__, (Class, ), attrs)
+        return type(str(name or Class.__name__), (Class, ), attrs)
 
     def _rgetattr(self, path):
         return attrgetter(path)(self)

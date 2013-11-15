@@ -5,12 +5,14 @@
 Provides a way to safely weakref any function, including bound methods (which
 aren't handled by the core weakref module).
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import weakref
 import traceback
 
 from collections import Callable
+
+from celery.five import unicode_compatible
 
 __all__ = ['safe_ref']
 
@@ -41,6 +43,7 @@ def safe_ref(target, on_delete=None):  # pragma: no cover
         return weakref.ref(target)
 
 
+@unicode_compatible
 class BoundMethodWeakref(object):  # pragma: no cover
     """'Safe' and reusable weak references to instance methods.
 

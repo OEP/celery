@@ -15,7 +15,7 @@ from kombu.common import ignore_errors
 from kombu.utils import symbol_by_name
 
 from .datastructures import DependencyGraph, GraphFormatter
-from .five import values, with_metaclass
+from .five import values, with_metaclass, unicode_compatible
 from .utils.imports import instantiate, qualname
 from .utils.log import get_logger
 from .utils.threads import default_socket_timeout
@@ -279,6 +279,7 @@ class Blueprint(object):
         return _label(self)
 
 
+@unicode_compatible
 class StepType(type):
     """Metaclass for steps."""
 

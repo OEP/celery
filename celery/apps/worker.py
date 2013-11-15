@@ -25,7 +25,7 @@ from kombu.utils.encoding import safe_str
 
 from celery import VERSION_BANNER, platforms, signals
 from celery.exceptions import CDeprecationWarning, SystemTerminate
-from celery.five import string, string_t, internal_string_t
+from celery.five import string, string_t
 from celery.loaders.app import AppLoader
 from celery.app import trace
 from celery.utils import cry, isatty
@@ -84,7 +84,7 @@ def active_thread_count():
 
 
 def safe_say(msg):
-    print('\n{0}'.format(msg), file=sys.__stderr__)
+    print(safe_str('\n{0}'.format(msg)), file=sys.__stderr__)
 
 ARTLINES = [
     ' --------------',
@@ -186,16 +186,16 @@ class Worker(WorkController):
 
         # Dump configuration to screen so we have some basic information
         # for when users sends bug reports.
-        print(''.join([
+        print(safe_str(''.join([
             string(self.colored.cyan(' \n', self.startup_info())),
             string(self.colored.reset(self.extra_info() or '')),
-        ]), file=sys.__stdout__)
+        ])), file=sys.__stdout__)
         self.set_process_status('-active-')
         self.install_platform_tweaks(self)
 
     def on_consumer_ready(self, consumer):
         signals.worker_ready.send(sender=consumer)
-        print('{0} ready.'.format(safe_str(self.hostname), ))
+        print(safe_str('{0} ready.'.format(safe_str(self.hostname), )))
 
     def setup_logging(self, colorize=None):
         if colorize is None and self.no_color is not None:
@@ -208,8 +208,8 @@ class Worker(WorkController):
     def purge_messages(self):
         count = self.app.control.purge()
         if count:
-            print('purge: Erased {0} {1} from the queue.\n'.format(
-                count, pluralize(count, 'message')))
+            print(safe_str('purge: Erased {0} {1} from the queue.\n'.format(
+                count, pluralize(count, 'message'))))
 
     def tasklist(self, include_builtins=True, sep='\n', int_='celery.'):
         return sep.join(
@@ -311,7 +311,7 @@ def _shutdown_handler(worker, sig='TERM', how='Warm',
                                 'Cold': 'should_terminate'}[how], True)
             else:
                 raise exc()
-    _handle_request.__name__ = internal_string_t('worker_{0}'.format(how))
+    _handle_request.__name__ = str('worker_{0}'.format(how))
     platforms.signals[sig] = _handle_request
 install_worker_term_handler = partial(
     _shutdown_handler, sig='SIGTERM', how='Warm', exc=SystemExit,

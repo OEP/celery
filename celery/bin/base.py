@@ -82,7 +82,7 @@ from types import ModuleType
 from celery import VERSION_BANNER, Celery, maybe_patch_concurrency
 from celery import signals
 from celery.exceptions import CDeprecationWarning, CPendingDeprecationWarning
-from celery.five import items, string, string_t, values
+from celery.five import items, string, string_t, values, unicode_compatible
 from celery.platforms import EX_FAILURE, EX_OK, EX_USAGE
 from celery.utils import term
 from celery.utils import text
@@ -106,6 +106,7 @@ __all__ = ['Error', 'UsageError', 'Extensions', 'HelpFormatter',
            'Command', 'Option', 'daemon_options']
 
 
+@unicode_compatible
 class Error(Exception):
     status = EX_FAILURE
 
@@ -116,7 +117,6 @@ class Error(Exception):
 
     def __str__(self):
         return self.reason
-    __unicode__ = __str__
 
 
 class UsageError(Error):

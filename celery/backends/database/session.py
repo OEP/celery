@@ -6,7 +6,7 @@
     SQLAlchemy sessions.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from collections import defaultdict
 from multiprocessing.util import register_after_fork

@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import json
 
+from celery.five import unicode_compatible
 from celery.utils.debug import humanbytes
 from celery.utils.imports import qualname
 
@@ -19,6 +20,7 @@ def jsonable(cls):
 
 
 @jsonable
+@unicode_compatible
 class Data(object):
 
     def __init__(self, label, data):
@@ -29,6 +31,7 @@ class Data(object):
         return '<Data: {0} ({1})>'.format(
             self.label, humanbytes(len(self.data)),
         )
+    __repr__ = __str__
 
     def __to_json__(self):
         return json_reduce(self, {'label': self.label, 'data': self.data})
@@ -39,7 +42,6 @@ class Data(object):
 
     def __reduce__(self):
         return Data, (self.label, self.data)
-    __unicode__ = __repr__ = __str__
 
 BIG = Data('BIG', 'x' * 2 ** 20 * 8)
 SMALL = Data('SMALL', 'e' * 1024)

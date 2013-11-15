@@ -8,7 +8,7 @@
 
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 __all__ = ['Counter', 'reload', 'UserList', 'UserDict', 'Queue', 'Empty',
            'zip_longest', 'StringIO', 'BytesIO', 'map', 'string', 'string_t',
@@ -58,7 +58,6 @@ if PY3:  # pragma: no cover
     map = map
     string = str
     string_t = str
-    internal_string_t = str  # used in fun.__name__ etc
     long_t = int
     text_t = str
     range = range
@@ -92,6 +91,9 @@ if PY3:  # pragma: no cover
                 data = data.encode()
             StringIO.write(self, data)
 
+    def unicode_compatible(cls):
+        return cls
+
 else:
     import __builtin__ as builtins  # noqa
     from Queue import Queue, Empty  # noqa
@@ -102,7 +104,6 @@ else:
     text_t = unicode
     long_t = long                   # noqa
     range = xrange
-    internal_string_t = str
     int_types = (int, long)
 
     open_fqdn = '__builtin__.open'
@@ -132,6 +133,13 @@ else:
         exec("""exec code in globs, locs""")
 
     exec_("""def reraise(tp, value, tb=None): raise tp, value, tb""")
+
+    def unicode_compatible(cls):
+        cls.__unicode__ = cls.__str__
+        cls.__str__ = lambda self: self.__unicode__().encode(
+            'utf-8', 'replace',
+        )
+        return cls
 
     BytesIO = WhateverIO = StringIO         # noqa
 
@@ -339,7 +347,8 @@ def create_module(name, attrs, cls_attrs=None, pkg=None,
 
     attrs = dict((attr_name, prepare_attr(attr) if prepare_attr else attr)
                  for attr_name, attr in items(attrs))
-    module = sys.modules[fqdn] = type(modname, (base, ), cls_attrs)(fqdn)
+    module = sys.modules[fqdn] = type(str(modname), (base, ), cls_attrs)(
+        str(fqdn))
     module.__dict__.update(attrs)
     return module
 

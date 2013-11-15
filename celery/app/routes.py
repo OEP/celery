@@ -7,7 +7,7 @@
     (:setting:`CELERY_ROUTES`).
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from celery.exceptions import QueueNotFound
 from celery.five import string_t

@@ -6,9 +6,9 @@
     This module contains all exceptions used by the Celery API.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
-from .five import string_t
+from .five import string_t, unicode_compatible
 
 from billiard.exceptions import (  # noqa
     SoftTimeLimitExceeded, TimeLimitExceeded, WorkerLostError, Terminated,
@@ -83,6 +83,7 @@ class MaxRetriesExceededError(Exception):
     """The tasks max restart limit has been exceeded."""
 
 
+@unicode_compatible
 class Retry(Exception):
     """The task is to be retried later."""
 

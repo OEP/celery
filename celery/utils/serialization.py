@@ -6,7 +6,7 @@
     Utilities for safely pickling exceptions.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from inspect import getmro
 from itertools import takewhile
@@ -15,6 +15,8 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle  # noqa
+
+from celery.five import unicode_compatible
 
 from .encoding import safe_repr
 
@@ -31,7 +33,7 @@ except NameError:  # pragma: no cover
 
 
 def subclass_exception(name, parent, module):  # noqa
-    return type(name, (parent, ), {'__module__': module})
+    return type(str(name), (parent, ), {'__module__': module})
 
 
 def find_pickleable_exception(exc, loads=pickle.loads,
@@ -74,6 +76,7 @@ def create_exception_cls(name, module, parent=None):
     return subclass_exception(name, parent, module)
 
 
+@unicode_compatible
 class UnpickleableExceptionWrapper(Exception):
     """Wraps unpickleable exceptions.
 

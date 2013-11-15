@@ -57,7 +57,7 @@ Misc.
 -----
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 __all__ = ['PENDING', 'RECEIVED', 'STARTED', 'SUCCESS', 'FAILURE',
            'REVOKED', 'RETRY', 'IGNORED', 'READY_STATES', 'UNREADY_STATES',
@@ -66,14 +66,14 @@ __all__ = ['PENDING', 'RECEIVED', 'STARTED', 'SUCCESS', 'FAILURE',
 #: State precedence.
 #: None represents the precedence of an unknown state.
 #: Lower index means higher precedence.
-PRECEDENCE = ['SUCCESS',
-              'FAILURE',
+PRECEDENCE = [str('SUCCESS'),
+              str('FAILURE'),
               None,
-              'REVOKED',
-              'STARTED',
-              'RECEIVED',
-              'RETRY',
-              'PENDING']
+              str('REVOKED'),
+              str('STARTED'),
+              str('RECEIVED'),
+              str('RETRY'),
+              str('PENDING')]
 
 #: Hash lookup of PRECEDENCE to index
 PRECEDENCE_LOOKUP = dict(zip(PRECEDENCE, range(0, len(PRECEDENCE))))
@@ -128,21 +128,21 @@ class state(str):
         return self.compare(other, lambda a, b: a >= b)
 
 #: Task state is unknown (assumed pending since you know the id).
-PENDING = 'PENDING'
+PENDING = str('PENDING')
 #: Task was received by a worker.
-RECEIVED = 'RECEIVED'
+RECEIVED = str('RECEIVED')
 #: Task was started by a worker (:setting:`CELERY_TRACK_STARTED`).
-STARTED = 'STARTED'
+STARTED = str('STARTED')
 #: Task succeeded
-SUCCESS = 'SUCCESS'
+SUCCESS = str('SUCCESS')
 #: Task failed
-FAILURE = 'FAILURE'
+FAILURE = str('FAILURE')
 #: Task was revoked.
-REVOKED = 'REVOKED'
+REVOKED = str('REVOKED')
 #: Task is waiting for retry.
-RETRY = 'RETRY'
-IGNORED = 'IGNORED'
-REJECTED = 'REJECTED'
+RETRY = str('RETRY')
+IGNORED = str('IGNORED')
+REJECTED = str('REJECTED')
 
 READY_STATES = frozenset([SUCCESS, FAILURE, REVOKED])
 UNREADY_STATES = frozenset([PENDING, RECEIVED, STARTED, RETRY])

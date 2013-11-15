@@ -6,7 +6,7 @@
     Task results/state and groups of results.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import time
 
@@ -22,7 +22,7 @@ from ._state import task_join_will_block
 from .app import app_or_default
 from .datastructures import DependencyGraph, GraphFormatter
 from .exceptions import IncompleteStream, TimeoutError
-from .five import items, range, string_t, monotonic
+from .five import items, range, string_t, monotonic, unicode_compatible
 
 __all__ = ['ResultBase', 'AsyncResult', 'ResultSet', 'GroupResult',
            'EagerResult', 'result_from_tuple']
@@ -46,6 +46,7 @@ class ResultBase(object):
     parent = None
 
 
+@unicode_compatible
 class AsyncResult(ResultBase):
     """Query task state.
 

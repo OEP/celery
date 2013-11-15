@@ -7,7 +7,7 @@
     when workers start, when tasks are executed and so on.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from celery._state import current_app
 from celery.utils import deprecated

@@ -14,6 +14,11 @@ from celery.exceptions import SoftTimeLimitExceeded
 
 from .templates import use_template, template_names
 
+import socket
+def _geth():
+    return u'ðßßððð'
+socket.gethostname = _geth
+
 
 class App(Celery):
     template_selected = False

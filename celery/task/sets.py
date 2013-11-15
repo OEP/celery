@@ -7,7 +7,7 @@
     not be used anymore use :func:`celery.group` instead.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 from celery._state import get_current_worker_task
 from celery.app import app_or_default

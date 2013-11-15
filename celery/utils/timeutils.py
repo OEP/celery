@@ -6,7 +6,7 @@
     This module contains various utilities related to dates and times.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import os
 import time as _time

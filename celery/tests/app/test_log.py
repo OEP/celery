@@ -6,6 +6,7 @@ from tempfile import mktemp
 
 from celery import signals
 from celery.app.log import TaskFormatter
+from celery.five import unicode_compatible
 from celery.utils.log import LoggingProxy
 from celery.utils import uuid
 from celery.utils.log import (
@@ -130,6 +131,7 @@ class test_ColorFormatter(AppCase):
                 safe_str.side_effect = None
         safe_str.side_effect = on_safe_str
 
+        @unicode_compatible
         class Record(object):
             levelname = 'ERROR'
             msg = 'HELLO'

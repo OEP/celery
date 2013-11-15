@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import sys
 
@@ -17,10 +17,11 @@ $ {new_argv}
 
 
 def _warn_deprecated(new):
-    print(DEPRECATED_FMT.format(
+    from kombu.utils.encoding import safe_str
+    print(safe_str(DEPRECATED_FMT.format(
         old=basename(sys.argv[0]), new=new,
         new_argv=' '.join([new] + sys.argv[1:])),
-    )
+    ))
 
 
 def main():

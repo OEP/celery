@@ -9,7 +9,7 @@ from celery.local import (
     maybe_evaluate,
     try_import,
 )
-from celery.tests.case import Case, Mock
+from celery.tests.case import Case, Mock, SkipTest
 
 
 class test_try_import(Case):
@@ -74,6 +74,8 @@ class test_Proxy(Case):
             x.__dict__
 
     def test_unicode(self):
+        if sys.version_info[0] == 3:
+            raise SkipTest('py2 compatible')
 
         class X(object):
 

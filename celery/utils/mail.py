@@ -6,7 +6,7 @@
     How task error emails are formatted and sent.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import smtplib
 import socket
@@ -14,6 +14,8 @@ import traceback
 import warnings
 
 from email.mime.text import MIMEText
+
+from celery.five import unicode_compatible
 
 from .functional import maybe_list
 
@@ -39,6 +41,7 @@ class SendmailWarning(UserWarning):
     """Problem happened while sending the email message."""
 
 
+@unicode_compatible
 class Message(object):
 
     def __init__(self, to=None, sender=None, subject=None,

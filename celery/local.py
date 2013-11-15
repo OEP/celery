@@ -10,9 +10,10 @@
     Parts of this module is Copyright by Werkzeug Team.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import importlib
+import sys
 
 from .five import long_t, string
 
@@ -36,7 +37,7 @@ def _default_cls_attr(name, type_, cls_value):
     def __get__(self, obj, cls=None):
         return self.__getter(obj) if obj is not None else self
 
-    return type(name, (type_, ), {
+    return type(str(name), (type_, ), {
         '__new__': __new__, '__get__': __get__,
     })
 
@@ -122,11 +123,12 @@ class Proxy(object):
             return False
     __nonzero__ = __bool__  # Py2
 
-    def __unicode__(self):
-        try:
-            return string(self._get_current_object())
-        except RuntimeError:  # pragma: no cover
-            return repr(self)
+    if sys.version_info[0] < 3:
+        def __unicode__(self):
+            try:
+                return string(self._get_current_object())
+            except RuntimeError:  # pragma: no cover
+                return repr(self)
 
     def __dir__(self):
         try:

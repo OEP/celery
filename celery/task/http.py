@@ -6,7 +6,7 @@
     Webhook task implementation.
 
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import anyjson
 import sys
@@ -18,7 +18,7 @@ except ImportError:  # pragma: no cover
     from urlparse import urlparse, parse_qsl  # noqa
 
 from celery import shared_task, __version__ as celery_version
-from celery.five import items, reraise
+from celery.five import items, reraise, unicode_compatible
 from celery.utils.log import get_task_logger
 
 __all__ = ['InvalidResponseError', 'RemoteExecuteError', 'UnknownStatusError',
@@ -81,6 +81,7 @@ def extract_response(raw_response, loads=anyjson.loads):
         raise UnknownStatusError(str(status))
 
 
+@unicode_compatible
 class MutableURL(object):
     """Object wrapping a Uniform Resource Locator.
 
