@@ -42,13 +42,14 @@ class Inspect(object):
     app = None
 
     def __init__(self, destination=None, timeout=1, callback=None,
-                 connection=None, app=None, limit=None):
+                 connection=None, app=None, limit=None, reply=True):
         self.app = app or self.app
         self.destination = destination
         self.timeout = timeout
         self.callback = callback
         self.connection = connection
         self.limit = limit
+        self.reply = reply
 
     def _prepare(self, reply):
         if not reply:
@@ -62,12 +63,9 @@ class Inspect(object):
     def _request(self, command, **kwargs):
         return self._prepare(self.app.control.broadcast(
             command,
-            arguments=kwargs,
-            destination=self.destination,
-            callback=self.callback,
-            connection=self.connection,
-            limit=self.limit,
-            timeout=self.timeout, reply=True,
+            arguments=kwargs, destination=self.destination,
+            callback=self.callback, connection=self.connection,
+            limit=self.limit, timeout=self.timeout, reply=self.reply,
         ))
 
     def report(self):
@@ -107,8 +105,11 @@ class Inspect(object):
     def conf(self, with_defaults=False):
         return self._request('dump_conf', with_defaults=with_defaults)
 
-    def hello(self, from_node, revoked=None):
-        return self._request('hello', from_node=from_node, revoked=revoked)
+    def hello(self, from_node, revoked=None, digest=None, version=2, **kwargs):
+        return self._request(
+            'hello', from_node=from_node, revoked=revoked, digest=digest,
+            version=version,
+        )
 
     def memsample(self):
         return self._request('memsample')
@@ -149,6 +150,12 @@ class Control(object):
         self.broadcast('election', connection=connection, arguments={
             'id': id, 'topic': topic, 'action': action,
         })
+
+    def mingle_reply(self, from_node, destination, revoked, clock,
+                     connection, **kwargs):
+        self.broadcast('mingle_reply', connection=connection, arguments={
+            'from_node': from_node, 'revoked': revoked, 'clock': clock,
+        }, destination=destination)
 
     def revoke(self, task_id, destination=None, terminate=False,
                signal='SIGTERM', **kwargs):

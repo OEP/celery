@@ -8,6 +8,7 @@
 """
 from __future__ import absolute_import, print_function, unicode_literals
 
+import hashlib
 import sys
 import time
 
@@ -647,6 +648,9 @@ class LimitedSet(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def digest(self, algorithm='sha1'):
+        return hashlib.new(algorithm, '\0'.join(self._data)).hexdigest()
 
     def __repr__(self):
         return 'LimitedSet({0})'.format(len(self))

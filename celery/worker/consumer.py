@@ -759,12 +759,18 @@ class Mingle(bootsteps.StartStopStep):
         with app.connection() as conn:
             return conn.transport.driver_type in self.compatible_transports
 
+    def sync_with(self, c, nodename, node_revoked, node_clock):
+        if node_revoked is not None:
+            revoked.update(node_revoked)
+        c.app.clock.adjust(other_clock)
+
     def start(self, c):
         info('mingle: searching for neighbors')
-        I = c.app.control.inspect(timeout=1.0, connection=c.connection)
-        replies = I.hello(c.hostname, revoked._data) or {}
+        I = c.app.control.inspect(reply=False, connection=c.connection)
+        replies = I.hello(c.hostname, revoked._data, revoked.digest(), version=2) or {}
         replies.pop(c.hostname, None)
         if replies:
+            print('REPLIES: %r' % (replies, ))
             info('mingle: sync with %s nodes',
                  len([reply for reply, value in items(replies) if value]))
             for reply in values(replies):
@@ -774,8 +780,8 @@ class Mingle(bootsteps.StartStopStep):
                     except KeyError:  # reply from pre-3.1 worker
                         pass
                     else:
-                        c.app.clock.adjust(other_clock)
-                        revoked.update(other_revoked)
+                        self.sync_with(
+                            c, from_node, other_revoked, other_clock)
             info('mingle: sync complete')
         else:
             info('mingle: all alone')

@@ -261,16 +261,30 @@ def clock(state, **kwargs):
 def dump_revoked(state, **kwargs):
     return list(worker_state.revoked)
 
+@Panel.register
+def mingle_reply(state, from_node, revoked, clock, **kwargs):
+    consumer = state.consumer
+    info('mingle: sync with %s', from_node)
+    consumer.mingle.sync_with(consumer, from_node, revoked, clock)
+
 
 @Panel.register
-def hello(state, from_node, revoked=None, **kwargs):
+def hello(state, from_node, revoked=None, digest=None, version=None, **kwargs):
     if from_node != state.hostname:
+        version = version or 1
         logger.info('sync with %s', from_node)
-        if revoked:
+        reply_revoked = None
+        if not digest or digest != worker_state.revoked.digest():
             worker_state.revoked.update(revoked)
-        return {'revoked': worker_state.revoked._data,
-                'clock': state.app.clock.forward()}
-
+            reply_revoked = worker_state.revoked
+        if version > 2:
+            self.app.control.mingle_reply(
+                state.hostname, from_node, reply_revoked,
+                state.app.clock.forward(), state.consumer.connection,
+            )
+        else:
+            return {'revoked': worker_state.revoked._data,
+                    'clock': state.app.clock.forward()}
 
 @Panel.register
 def dump_tasks(state, taskinfoitems=None, **kwargs):

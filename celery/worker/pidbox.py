@@ -31,6 +31,7 @@ class Pidbox(object):
         self._forward_clock = self.c.app.clock.forward
 
     def on_message(self, body, message):
+        print('RECEIVED MESSAGE: %r' % (body, ))
         self._forward_clock()  # just increase clock as clients usually don't
                                # have a valid clock to adjust with.
         try:
