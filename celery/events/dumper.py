@@ -40,13 +40,21 @@ def humanize_type(type):
 
 class Dumper(object):
 
-    def __init__(self, out=sys.stdout):
+    def __init__(self, app, out=sys.stdout):
+        self.app = app
         self.out = out
+        self.state = app.events.State()
 
     def say(self, msg):
         print(msg, file=self.out)
 
     def on_event(self, ev):
+        self.state.event(ev)
+        evs = self.state.event_count
+        if not evs % 100:
+            print('EV: {0}'.format(evs))
+
+    def _on_event(self, ev):
         timestamp = datetime.utcfromtimestamp(ev.pop('timestamp'))
         type = ev.pop('type').lower()
         hostname = ev.pop('hostname')
@@ -81,7 +89,7 @@ class Dumper(object):
 
 def evdump(app=None, out=sys.stdout):
     app = app_or_default(app)
-    dumper = Dumper(out=out)
+    dumper = Dumper(app, out=out)
     dumper.say('-> evdump: starting capture...')
     conn = app.connection().clone()
 

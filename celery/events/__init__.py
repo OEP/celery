@@ -32,7 +32,7 @@ from celery.utils.timeutils import adjust_timestamp, utcoffset, maybe_s_to_ms
 
 __all__ = ['Events', 'Event', 'EventDispatcher', 'EventReceiver']
 
-event_exchange = Exchange('celeryev', type='topic')
+event_exchange = Exchange('celeryev', type='topic', auto_delete=False)
 
 _TZGETTER = itemgetter('utcoffset', 'timestamp')
 
@@ -202,6 +202,7 @@ class EventDispatcher(object):
             event = Event(type, hostname=self.hostname, utcoffset=utcoffset(),
                           pid=self.pid, clock=clock, **fields)
             exchange = self.exchange
+            print('PUBLISH -> %r %r' % (exchange.name, type))
             producer.publish(
                 event,
                 routing_key=type.replace('-', '.'),
@@ -287,16 +288,17 @@ class EventReceiver(ConsumerMixin):
         self.node_id = node_id or uuid()
         self.queue_prefix = queue_prefix
         self.exchange = get_exchange(self.connection or self.app.connection())
-        self.queue = Queue('.'.join([self.queue_prefix, self.node_id]),
+        self.queue = Queue('footmp', #.'.join([self.queue_prefix, self.node_id]),
                            exchange=self.exchange,
                            routing_key=self.routing_key,
-                           auto_delete=True,
-                           durable=False,
+                           auto_delete=False,
+                           durable=True,
                            queue_arguments=self._get_queue_arguments())
         self.adjust_clock = self.app.clock.adjust
 
     def _get_queue_arguments(self):
         conf = self.app.conf
+        return {}
         return dictfilter({
             'x-message-ttl': maybe_s_to_ms(conf.CELERY_EVENT_QUEUE_TTL),
             'x-expires': maybe_s_to_ms(conf.CELERY_EVENT_QUEUE_EXPIRES),
